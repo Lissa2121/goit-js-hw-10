@@ -3,39 +3,73 @@ import 'flatpickr/dist/flatpickr.min.css';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-
-
+let userSelectedDate;
+let countdownInterval;
+const startBtn = document.querySelector('[data-start]');
+const inputDelay = document.querySelector('#datetime-picker');
+startBtn.disabled = true;
 
 const options = {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
-//   onClose(selectedDates) {
-//     console.log(selectedDates[0]);
-//   }!!!!!!!!!!!,
+  onClose(selectedDates) {
+    userSelectedDate = selectedDates[0];
+    const currentDate = new Date();
+    if (userSelectedDate < currentDate) {
+      iziToast.show({
+        title: 'Please',
+        message: 'choose a date in the future',
+        backgroundColor: '#FFA000',
+        messageColor: '#FFFFFF',
+        titleColor: '#FFFFFF',
+      });
+      startBtn.disabled = true;
+    } else {
+      startBtn.disabled = false;
+    }
+  },
 };
 
+flatpickr('#datetime-picker', options);
+
+startBtn.addEventListener('click', function () {
+  const countdownUpdate = () => {
+    const now = new Date().getTime();
+    const distance = userSelectedDate - now;
+
+    if (distance <= 0) {
+      clearInterval(countdownInterval);
+      inputDelay.disabled = false;
+      startBtn.disabled = true;
+      return;
+    }
+
+    const { days, hours, minutes, seconds } = convertMs(distance);
+
+    document.querySelector('[data-days]').innerText = days.toString().padStart(2, '0');
+    document.querySelector('[data-hours]').innerText = hours.toString().padStart(2, '0');
+    document.querySelector('[data-minutes]').innerText = minutes.toString().padStart(2, '0');
+    document.querySelector('[data-seconds]').innerText = seconds.toString().padStart(2, '0');
+  };
+
+  inputDelay.disabled = true;
+  startBtn.disabled = true;
+  countdownUpdate();
+  countdownInterval = setInterval(countdownUpdate, 1000);
+});
 
 function convertMs(ms) {
-  // Number of milliseconds per unit of time
   const second = 1000;
   const minute = second * 60;
   const hour = minute * 60;
   const day = hour * 24;
 
-  // Remaining days
   const days = Math.floor(ms / day);
-  // Remaining hours
   const hours = Math.floor((ms % day) / hour);
-  // Remaining minutes
   const minutes = Math.floor(((ms % day) % hour) / minute);
-  // Remaining seconds
   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
 
   return { days, hours, minutes, seconds };
 }
-
-console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
-console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
-console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
